@@ -1,4 +1,4 @@
-package models
+package teams
 
 import (
 	"fmt"
@@ -29,6 +29,10 @@ type Team struct {
 
 func (t *Team) TeamGreeting() {
 	fmt.Printf("Go %v!!!\n", t.Name)
+}
+
+func New() (t *Team) {
+	return &Team{}
 }
 
 func NewTeamService() *gorm.DB {
