@@ -1,15 +1,12 @@
 package teams
 
 import (
-	"fmt"
-
 	"gorm.io/gorm"
 )
 
 func CreateTeam(db *gorm.DB, teams []string, conference string, division string) {
 	team := Team{}
 	for _, name := range teams {
-		fmt.Println("Creating...", name)
 		team = Team{
 			Name:       name,
 			Division:   division,
