@@ -15,7 +15,7 @@ const (
 	dbname = "football_elimination_dev"
 )
 
-// wins, loses, ties, division, and conference
+// An NFL team including record
 type Team struct {
 	gorm.Model
 	Id         uint
@@ -27,14 +27,17 @@ type Team struct {
 	Conference string
 }
 
+// GO PACK GO!!!
 func (t *Team) TeamGreeting() {
 	fmt.Printf("Go %v!!!\n", t.Name)
 }
 
+// return a pointer to a new Team struct
 func New() (t *Team) {
 	return &Team{}
 }
 
+// initialize the Database
 func NewTeamService() *gorm.DB {
 	connectionInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"dbname=%s sslmode=disable",
@@ -48,13 +51,12 @@ func NewTeamService() *gorm.DB {
 	return db
 }
 
+// Create a Team record in the Database
 func Create(db *gorm.DB, team *Team) {
-	err := db.Create(team)
-	if err != nil {
-		panic(err)
-	}
+	db.Create(team)
 }
 
+// Select the first team from the Database
 func First(db *gorm.DB, team *Team) error {
 	err := db.First(team).Error
 	switch err {
@@ -67,6 +69,7 @@ func First(db *gorm.DB, team *Team) error {
 	}
 }
 
+// run GORM AutoMigrate using Team struct
 func AutoMigrate(db *gorm.DB) error {
 	err := db.AutoMigrate(&Team{})
 	if err != nil {

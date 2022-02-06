@@ -1,10 +1,16 @@
 package teams
 
-import "gorm.io/gorm"
+import (
+	"fmt"
+
+	"gorm.io/gorm"
+)
 
 func CreateTeam(db *gorm.DB, teams []string, conference string, division string) {
+	team := Team{}
 	for _, name := range teams {
-		team := Team{
+		fmt.Println("Creating...", name)
+		team = Team{
 			Name:       name,
 			Division:   division,
 			Conference: conference,
@@ -18,7 +24,7 @@ func CreateTeam(db *gorm.DB, teams []string, conference string, division string)
 
 // Populate Database with all 32 NFL teams
 // Last updated 2-2022
-func BuildTeams(db *gorm.DB) {
+func Build(db *gorm.DB) {
 	// AFC //////////////////////////////////////////////////
 	conference := "AFC"
 	division := "East"

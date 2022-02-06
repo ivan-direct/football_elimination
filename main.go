@@ -1,17 +1,28 @@
 package main
 
 import (
-	"fmt"
-
-	"football_elimination/models"
+	"football_elimination/teams"
 )
 
 func main() {
-	dog := models.Dog{
-		Name:  "Fido",
-		Breed: "Collie",
-		Age:   4,
-	}
-	fmt.Printf("Dog:%v\n", dog.Name)
+	// packers := teams.Team{
+	// 	Name:       "Packers",
+	// 	Division:   "North",
+	// 	Conference: "NFC",
+	// }
+	bills := teams.New()
+	bills.Id = 1
+
+	db := teams.NewTeamService()
+
+	// teams.Create(db, &packers)
+
+	teams.First(db, bills)
+	bills.TeamGreeting()
+
+	// build team table
+	// db.Migrator().DropTable(&teams.Team{})
+	// teams.AutoMigrate(db)
+	// teams.Build(db)
 
 }
