@@ -17,7 +17,7 @@ const (
 
 // wins, loses, ties, division, and conference
 type Team struct {
-	// gorm.Model
+	gorm.Model
 	Id         uint
 	Name       string
 	Wins       int
@@ -27,7 +27,11 @@ type Team struct {
 	Conference string
 }
 
-func newTeamService() *gorm.DB {
+func (t *Team) TeamGreeting() {
+	fmt.Printf("Go %v!!!\n", t.Name)
+}
+
+func NewTeamService() *gorm.DB {
 	connectionInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"dbname=%s sslmode=disable",
 		host, port, user, dbname)
@@ -40,7 +44,14 @@ func newTeamService() *gorm.DB {
 	return db
 }
 
-func first(db *gorm.DB, team *Team) error {
+func Create(db *gorm.DB, team *Team) {
+	err := db.Create(team)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func First(db *gorm.DB, team *Team) error {
 	err := db.First(team).Error
 	switch err {
 	case nil:
@@ -50,4 +61,12 @@ func first(db *gorm.DB, team *Team) error {
 	default:
 		return err
 	}
+}
+
+func AutoMigrate(db *gorm.DB) error {
+	err := db.AutoMigrate(&Team{})
+	if err != nil {
+		return err
+	}
+	return nil
 }
