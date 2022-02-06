@@ -1,7 +1,17 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"football_elimination/models"
+)
 
 func main() {
-	fmt.Println("Hello, world.")
+	dog := models.Dog{
+		Name:  "Fido",
+		Breed: "Collie",
+		Age:   4,
+	}
+	fmt.Printf("Dog:%v\n", dog.Name)
+
 }
