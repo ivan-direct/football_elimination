@@ -18,7 +18,6 @@ const (
 // An NFL team including record
 type Team struct {
 	gorm.Model
-	Id         uint
 	Name       string
 	Wins       int
 	Loses      int
