@@ -11,7 +11,7 @@ func main() {
 	// 	Conference: "NFC",
 	// }
 	bills := teams.New()
-	bills.Id = 1
+	bills.ID = 1
 
 	db := teams.NewTeamService()
 
@@ -21,8 +21,11 @@ func main() {
 	bills.TeamGreeting()
 
 	// build team table
-	// db.Migrator().DropTable(&teams.Team{})
+	// db.Migrator().DropTable(&seasons.Season{})
 	// teams.AutoMigrate(db)
 	// teams.Build(db)
+
+	// games.AutoMigrate(db)
+	// games.DivisionalGameScheduler(db, "NFC", "North")
 
 }

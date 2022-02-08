@@ -55,6 +55,12 @@ func Create(db *gorm.DB, team *Team) {
 	db.Create(team)
 }
 
+func FindDivisional(db *gorm.DB, conference, division string) []Team {
+	teams := []Team{}
+	db.Where("conference = ? and division = ?", conference, division).Find(&teams)
+	return teams
+}
+
 // Select the first team from the Database
 func First(db *gorm.DB, team *Team) error {
 	err := db.First(team).Error
