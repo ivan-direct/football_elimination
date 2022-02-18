@@ -20,18 +20,22 @@ type Game struct {
 	Year          uint
 }
 
-// Creates games for all 32 teams for 17 weeks ////
+type GameService struct {
+	DB *gorm.DB
+}
+
+// Creates games for all 32 teams for 17 weeks.
 // Honors current (as of 2022) NFL scheduling rules
-func BuildSeason(db *gorm.DB) {
+func (gs GameService) BuildSeason() {
 	// TODO toggle home/away games to keep them even
-	nonConferenceGameScheduler(db)
+	gs.nonConferenceGameScheduler()
 	divisions := []string{"East", "North", "South", "West"}
 	conferences := []string{"AFC", "NFC"}
 	for _, conference := range conferences {
 		// TODO toggle home/away games to keep them even
-		divisionalGameScheduler(db, conference)
+		gs.divisionalGameScheduler(conference)
 		for _, division := range divisions {
-			interDivisionalGameScheduler(db, conference, division)
+			gs.interDivisionalGameScheduler(conference, division)
 		}
 	}
 }
@@ -39,14 +43,14 @@ func BuildSeason(db *gorm.DB) {
 // Create Games records for Divisional Games
 // Rules: Six games against divisional opponents
 // two games per team, one at home and one on the road.
-func interDivisionalGameScheduler(db *gorm.DB, conference, division string) {
+func (gs GameService) interDivisionalGameScheduler(conference, division string) {
 	//TODO use cur year as default and implement ability to set custom year
 	var year uint = 2022
 	// TODO implement psuedorandom week generator
 	divisionWeeks := []uint{1, 8, 9, 15, 17, 18}
 	currentSchedule := make(map[string][]uint)
 
-	divisionTeams := teams.FindDivisional(db, conference, division)
+	divisionTeams := teams.FindDivisional(gs.DB, conference, division)
 	for _, team := range divisionTeams {
 		// create team bucket for storing scheduled weeks
 		if _, ok := currentSchedule[team.Name]; !ok {
@@ -70,7 +74,7 @@ func interDivisionalGameScheduler(db *gorm.DB, conference, division string) {
 						fmt.Println()
 						// schedule a home and away game
 						game := Game{Week: week, HomeTeam: team.Name, AwayTeam: opponent.Name, Year: year}
-						Create(db, &game)
+						gs.create(&game)
 						// add to map to prevent scheduling conflicts
 						currentSchedule[team.Name] = append(teamSchedule, week)
 						currentSchedule[opponent.Name] = append(oppenentSchedule, week)
@@ -86,52 +90,75 @@ func interDivisionalGameScheduler(db *gorm.DB, conference, division string) {
 // - Set 2022 accurately and use this as the origin to extrapolate for past/future years.
 // Rules: Four games against teams from a division within its conference
 // - two games at home and two on the road.
-func divisionalGameScheduler(db *gorm.DB, conference string) {
+func (gs GameService) divisionalGameScheduler(conference string) {
 	divisionTeams := make(map[string][]teams.Team)
 	conferenceWeeks := []uint{2, 6, 7, 13}
 
-	conferenceTeams := teams.GroupByDivisional(db, conference)
+	conferenceTeams := teams.GroupByDivisional(gs.DB, conference)
 	divisionTeams["East"] = conferenceTeams[0:4]
 	divisionTeams["North"] = conferenceTeams[4:8]
-	scheduleByDivision(db, divisionTeams["East"], divisionTeams["North"], conferenceWeeks)
+	gs.scheduleByDivision(divisionTeams["East"], divisionTeams["North"], conferenceWeeks)
 	// GroupByDivisional() needs to be called again
-	conferenceTeams = teams.GroupByDivisional(db, conference)
+	conferenceTeams = teams.GroupByDivisional(gs.DB, conference)
 	divisionTeams["South"] = conferenceTeams[8:12]
 	divisionTeams["West"] = conferenceTeams[12:16]
-	scheduleByDivision(db, divisionTeams["South"], divisionTeams["West"], conferenceWeeks)
+	gs.scheduleByDivision(divisionTeams["South"], divisionTeams["West"], conferenceWeeks)
 }
 
-// Stub Code
-func shuffleDivision(teams []teams.Team) {
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(teams), func(i, j int) { teams[i], teams[j] = teams[j], teams[i] })
-}
-
-// Rules: Four games against teams from a division in the other conference
+// Create four games against teams from a division in the other conference
 // — two games at home and two on the road.
-func nonConferenceGameScheduler(db *gorm.DB) {
+func (gs GameService) nonConferenceGameScheduler() {
 	//TODO replace hardcoded AFC East vs. NFC North, AFC South vs. NFC West
-	afcDivisionOne := teams.FindDivisional(db, "AFC", "East")
-	nfcDivisionOne := teams.FindDivisional(db, "NFC", "North")
-	afcDivisionTwo := teams.FindDivisional(db, "AFC", "South")
-	nfcDivisionTwo := teams.FindDivisional(db, "NFC", "West")
+	afcDivisionOne := teams.FindDivisional(gs.DB, "AFC", "East")
+	nfcDivisionOne := teams.FindDivisional(gs.DB, "NFC", "North")
+	afcDivisionTwo := teams.FindDivisional(gs.DB, "AFC", "South")
+	nfcDivisionTwo := teams.FindDivisional(gs.DB, "NFC", "West")
 	nonConferenceWeeks := []uint{3, 4, 5, 14}
 
-	scheduleByDivision(db, afcDivisionOne, nfcDivisionOne, nonConferenceWeeks)
-	scheduleByDivision(db, afcDivisionTwo, nfcDivisionTwo, nonConferenceWeeks)
+	gs.scheduleByDivision(afcDivisionOne, nfcDivisionOne, nonConferenceWeeks)
+	gs.scheduleByDivision(afcDivisionTwo, nfcDivisionTwo, nonConferenceWeeks)
 }
 
 // schedule games for 2 divisions given an array of week values
-func scheduleByDivision(db *gorm.DB, divisionOne, divisionTwo []teams.Team, weeks []uint) {
+func (gs GameService) scheduleByDivision(divisionOne, divisionTwo []teams.Team, weeks []uint) {
 	for _, teamOne := range divisionOne {
 		for j, teamTwo := range divisionTwo {
 			week := weeks[j]
 			game := Game{Week: week, HomeTeam: teamOne.Name, AwayTeam: teamTwo.Name, Year: 2022}
-			Create(db, &game)
+			gs.create(&game)
 		}
 		// must rotate divisionTwo to avoid scheduling inner team on the same week > 1
 		divisionTwo = append(divisionTwo[1:], divisionTwo[0])
 	}
+}
+
+// Rules: Two games against teams from the two remaining divisions in its own conference
+// - one game at home and one on the road.
+// - Matchups are based on division ranking from the previous season.
+// func rankedDivisionalGameScheduler(){}
+// for division, teams := range divisionTeams {
+// 	shuffleDivision(teams) //TODO replace me with last years rankings
+// 	fmt.Printf("Division:%s # # # # # # # # # #\n", division)
+// 	for _, team := range teams {
+// 		fmt.Printf("Team: %s\n", team.Name)
+// 	}
+// }
+// Rules One game against a non-conference opponent from a division that the team is not scheduled to play.
+// Matchups are based on division ranking from the previous season.
+// func rankedNonConferenceGameScheduler(){}
+
+// Create a Game record in the Database
+func (gs GameService) create(game *Game) {
+	gs.DB.Create(game)
+}
+
+// run GORM AutoMigrate using Game struct
+func (gs GameService) AutoMigrate() error {
+	err := gs.DB.AutoMigrate(&Game{})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // check both teams schedule to see if the given week has
@@ -151,31 +178,8 @@ func weekAvailable(week uint, teamWeeks, opponentWeeks []uint) bool {
 }
 
 // TODO need logic to determine last year's rankings. Set 2021 (last year) accurately and devise a means to record this.
-// Rules: Two games against teams from the two remaining divisions in its own conference
-// - one game at home and one on the road.
-// - Matchups are based on division ranking from the previous season.
-// func rankedDivisionalGameScheduler(){}
-// for division, teams := range divisionTeams {
-// 	shuffleDivision(teams) //TODO replace me with last years rankings
-// 	fmt.Printf("Division:%s # # # # # # # # # #\n", division)
-// 	for _, team := range teams {
-// 		fmt.Printf("Team: %s\n", team.Name)
-// 	}
-// }
-// Rules One game against a non-conference opponent from a division that the team is not scheduled to play.
-// Matchups are based on division ranking from the previous season.
-// func rankedNonConferenceGameScheduler(){}
-
-// Create a Game record in the Database
-func Create(db *gorm.DB, game *Game) {
-	db.Create(game)
-}
-
-// run GORM AutoMigrate using Game struct
-func AutoMigrate(db *gorm.DB) error {
-	err := db.AutoMigrate(&Game{})
-	if err != nil {
-		return err
-	}
-	return nil
+// Stub Code
+func shuffleDivision(teams []teams.Team) {
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(teams), func(i, j int) { teams[i], teams[j] = teams[j], teams[i] })
 }

@@ -9,7 +9,7 @@ func main() {
 	// bills := teams.New()
 	// bills.ID = 1
 
-	db := teams.NewTeamService()
+	// db := teams.NewTeamService()
 
 	// teams.Create(db, &packers)
 
@@ -20,10 +20,11 @@ func main() {
 	// db.Migrator().DropTable(&seasons.Season{})
 	// teams.AutoMigrate(db)
 	// teams.Build(db)
-
-	db.Migrator().DropTable(&games.Game{})
-	games.AutoMigrate(db)
-	games.BuildSeason(db)
+	//TODO refactor teams.NewTeamService() to shared model since it is not just team specific
+	gs := games.GameService{DB: teams.NewTeamService()}
+	gs.DB.Migrator().DropTable(&games.Game{})
+	gs.AutoMigrate()
+	gs.BuildSeason()
 	// teams.GroupByDivisional(db, "NFC")
 
 }
