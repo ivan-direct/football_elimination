@@ -61,6 +61,12 @@ func FindDivisional(db *gorm.DB, conference, division string) []Team {
 	return teams
 }
 
+func GroupByDivisional(db *gorm.DB, conference string) []Team {
+	teams := []Team{}
+	db.Model(&Team{}).Where("conference = ?", conference).Order("division, name").Find(&teams)
+	return teams
+}
+
 // Select the first team from the Database
 func First(db *gorm.DB, team *Team) error {
 	err := db.First(team).Error
